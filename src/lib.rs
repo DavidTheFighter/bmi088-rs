@@ -79,17 +79,28 @@ pub enum Bmi088PinBehavior {
 pub struct Bmi088Accelerometer<I2C> {
     i2c: I2C,
     address: u8,
+    bandwidth: AccelFilterBandwidth,
+    data_rate: AccelDataRate,
+    range: AccelRange,
 }
 
 #[derive(Debug)]
 pub struct Bmi088Gyroscope<I2C> {
     i2c: I2C,
     address: u8,
+    bandwidth: GyroBandwidth,
+    range: GyroRange,
 }
 
 impl<I2C: I2c> Bmi088Accelerometer<I2C> {
     pub fn new(i2c: I2C, address: u8) -> Self {
-        Self { i2c, address }
+        Self {
+            i2c,
+            address,
+            bandwidth: AccelFilterBandwidth::Normal,
+            data_rate: AccelDataRate::Hz100,
+            range: AccelRange::G6,
+        }
     }
 
     pub fn read_temperature(&mut self) -> Result<i16, I2C::Error> {
@@ -102,6 +113,11 @@ impl<I2C: I2c> Bmi088Accelerometer<I2C> {
 
 impl<I2C: I2c> Bmi088Gyroscope<I2C> {
     pub fn new(i2c: I2C, address: u8) -> Self {
-        Self { i2c, address }
+        Self {
+            i2c,
+            address,
+            bandwidth: GyroBandwidth::Data2000Filter532,
+            range: GyroRange::Deg2000,
+        }
     }
 }

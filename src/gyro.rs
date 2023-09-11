@@ -1,4 +1,4 @@
-use crate::{Bmi088PinBehavior, GyroBandwidth, GyroRange, Bmi088Gyroscope};
+use crate::{Bmi088Gyroscope, Bmi088PinBehavior, GyroBandwidth, GyroRange};
 use embedded_hal::i2c::blocking::I2c;
 
 const GYRO_CHIP_ID: u8 = 0x00;
@@ -41,22 +41,30 @@ impl<I2C: I2c> Bmi088Gyroscope<I2C> {
     }
 
     pub fn set_range(&mut self, range: GyroRange) -> Result<(), I2C::Error> {
-        self.i2c
-            .write(self.address, &[GYRO_RANGE, range as u8])
+        self.i2c.write(self.address, &[GYRO_RANGE, range as u8])
     }
 
-    pub fn get_range(&mut self) -> Result<GyroRange, I2C::Error> {
+    /// Reads the range from the sensor
+    pub fn read_range(&mut self) -> Result<GyroRange, I2C::Error> {
         let mut data = [0u8; 1];
+
         self.i2c
-            .write_read(self.address, &[GYRO_RANGE], &mut data)
-            .map(|_| match data[0] {
-                0x00 => GyroRange::Deg2000,
-                0x01 => GyroRange::Deg1000,
-                0x02 => GyroRange::Deg500,
-                0x03 => GyroRange::Deg250,
-                0x04 => GyroRange::Deg125,
-                _ => unreachable!(),
-            })
+            .write_read(self.address, &[GYRO_RANGE], &mut data)?;
+
+        self.range = match data[0] {
+            0x00 => GyroRange::Deg2000,
+            0x01 => GyroRange::Deg1000,
+            0x02 => GyroRange::Deg500,
+            0x03 => GyroRange::Deg250,
+            0x04 => GyroRange::Deg125,
+            _ => unreachable!(),
+        };
+
+        Ok(self.range)
+    }
+
+    pub fn get_range(&self) -> GyroRange {
+        self.range
     }
 
     pub fn set_bandwidth(&mut self, bandwidth: GyroBandwidth) -> Result<(), I2C::Error> {
@@ -64,22 +72,31 @@ impl<I2C: I2c> Bmi088Gyroscope<I2C> {
             .write(self.address, &[GYRO_BANDWIDTH, bandwidth as u8])
     }
 
-    pub fn get_bandwidth(&mut self) -> Result<GyroBandwidth, I2C::Error> {
+    /// Reads the bandwidth from the sensor
+    pub fn read_bandwidth(&mut self) -> Result<GyroBandwidth, I2C::Error> {
         let mut data = [0u8; 1];
+
         self.i2c
-            .write_read(self.address, &[GYRO_BANDWIDTH], &mut data)
-            .map(|_| match data[0] & (!0x80) {
-                // Bit 7 is always 1 and should be ignored
-                0x00 => GyroBandwidth::Data2000Filter532,
-                0x01 => GyroBandwidth::Data2000Filter230,
-                0x02 => GyroBandwidth::Data1000Filter116,
-                0x03 => GyroBandwidth::Data400Filter47,
-                0x04 => GyroBandwidth::Data200Filter23,
-                0x05 => GyroBandwidth::Data100Filter12,
-                0x06 => GyroBandwidth::Data200Filter64,
-                0x07 => GyroBandwidth::Data100Filter32,
-                _ => unreachable!(),
-            })
+            .write_read(self.address, &[GYRO_BANDWIDTH], &mut data)?;
+
+        self.bandwidth = match data[0] & (!0x80) {
+            // Bit 7 is always 1 and should be ignored
+            0x00 => GyroBandwidth::Data2000Filter532,
+            0x01 => GyroBandwidth::Data2000Filter230,
+            0x02 => GyroBandwidth::Data1000Filter116,
+            0x03 => GyroBandwidth::Data400Filter47,
+            0x04 => GyroBandwidth::Data200Filter23,
+            0x05 => GyroBandwidth::Data100Filter12,
+            0x06 => GyroBandwidth::Data200Filter64,
+            0x07 => GyroBandwidth::Data100Filter32,
+            _ => unreachable!(),
+        };
+
+        Ok(self.bandwidth)
+    }
+
+    pub fn get_bandwidth(&self) -> GyroBandwidth {
+        self.bandwidth
     }
 
     pub fn set_on(&mut self, on: bool) -> Result<(), I2C::Error> {

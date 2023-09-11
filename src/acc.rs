@@ -77,7 +77,8 @@ impl<I2C: I2c> Bmi088Accelerometer<I2C> {
         self.i2c.write(self.address, &[ACC_CONFIG, data[0]])
     }
 
-    pub fn get_bandwidth(&mut self) -> Result<AccelFilterBandwidth, I2C::Error> {
+    /// Reads the bandwidth setting from the device
+    pub fn read_bandwidth(&mut self) -> Result<AccelFilterBandwidth, I2C::Error> {
         let mut data = [0_u8; 1];
 
         self.i2c
@@ -86,12 +87,18 @@ impl<I2C: I2c> Bmi088Accelerometer<I2C> {
         data[0] &= 0b0111_0000;
         data[0] >>= 4;
 
-        Ok(match data[0] {
+        self.bandwidth = match data[0] {
             0x00 => AccelFilterBandwidth::OSR4,
             0x01 => AccelFilterBandwidth::OSR2,
             0x02 => AccelFilterBandwidth::Normal,
             _ => unreachable!(),
-        })
+        };
+
+        Ok(self.bandwidth)
+    }
+
+    pub fn get_bandwidth(&self) -> AccelFilterBandwidth {
+        self.bandwidth
     }
 
     pub fn set_data_rate(&mut self, data_rate: AccelDataRate) -> Result<(), I2C::Error> {
@@ -108,7 +115,8 @@ impl<I2C: I2c> Bmi088Accelerometer<I2C> {
         self.i2c.write(self.address, &[ACC_CONFIG, data[0]])
     }
 
-    pub fn get_data_rate(&mut self) -> Result<AccelDataRate, I2C::Error> {
+    /// Reads the data rate setting from the device
+    pub fn read_data_rate(&mut self) -> Result<AccelDataRate, I2C::Error> {
         let mut data = [0_u8; 1];
 
         self.i2c
@@ -116,7 +124,7 @@ impl<I2C: I2c> Bmi088Accelerometer<I2C> {
 
         data[0] &= 0b0000_1111;
 
-        Ok(match data[0] {
+        self.data_rate = match data[0] {
             0x05 => AccelDataRate::Hz12_5,
             0x06 => AccelDataRate::Hz25,
             0x07 => AccelDataRate::Hz50,
@@ -126,25 +134,38 @@ impl<I2C: I2c> Bmi088Accelerometer<I2C> {
             0x0B => AccelDataRate::Hz800,
             0x0C => AccelDataRate::Hz1600,
             _ => unreachable!(),
-        })
+        };
+
+        Ok(self.data_rate)
+    }
+
+    pub fn get_data_rate(&self) -> AccelDataRate {
+        self.data_rate
     }
 
     pub fn set_range(&mut self, range: AccelRange) -> Result<(), I2C::Error> {
         self.i2c.write(self.address, &[ACC_RANGE, range as u8])
     }
 
-    pub fn get_range(&mut self) -> Result<AccelRange, I2C::Error> {
+    /// Reads the range setting from the device
+    pub fn read_range(&mut self) -> Result<AccelRange, I2C::Error> {
         let mut data = [0_u8; 1];
 
         self.i2c.write_read(self.address, &[ACC_RANGE], &mut data)?;
 
-        Ok(match data[0] {
+        self.range = match data[0] {
             0x00 => AccelRange::G3,
             0x01 => AccelRange::G6,
             0x02 => AccelRange::G12,
             0x03 => AccelRange::G24,
             _ => unreachable!(),
-        })
+        };
+
+        Ok(self.range)
+    }
+
+    pub fn get_range(&self) -> AccelRange {
+        self.range
     }
 
     pub fn configure_int1_pin(
