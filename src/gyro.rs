@@ -1,4 +1,4 @@
-use crate::{Bmi088Gyroscope, Bmi088PinBehavior, GyroBandwidth, GyroRange};
+use crate::{Bmi088PinBehavior, GyroBandwidth, GyroRange, Bmi088Gyroscope};
 use embedded_hal::i2c::blocking::I2c;
 
 const GYRO_CHIP_ID: u8 = 0x00;
@@ -13,14 +13,14 @@ const GYRO_INT3_INT4_IO_CONF: u8 = 0x16;
 const GYRO_INT3_INT4_IO_MAP: u8 = 0x18;
 
 impl<I2C: I2c> Bmi088Gyroscope<I2C> {
-    pub fn read_addresschip_id(&mut self) -> Result<u8, I2C::Error> {
+    pub fn read_chip_id(&mut self) -> Result<u8, I2C::Error> {
         let mut data = [0u8; 1];
         self.i2c
             .write_read(self.address, &[GYRO_CHIP_ID], &mut data)
             .map(|_| data[0])
     }
 
-    pub fn read_addressdata(&mut self) -> Result<(i16, i16, i16), I2C::Error> {
+    pub fn read_data(&mut self) -> Result<(i16, i16, i16), I2C::Error> {
         let mut data = [0u8; 6];
         self.i2c
             .write_read(self.address, &[GYRO_X_LSB], &mut data)
@@ -33,18 +33,19 @@ impl<I2C: I2c> Bmi088Gyroscope<I2C> {
             })
     }
 
-    pub fn addressdata_ready_interrupt(&mut self) -> Result<bool, I2C::Error> {
+    pub fn data_ready_interrupt(&mut self) -> Result<bool, I2C::Error> {
         let mut data = [0u8; 1];
         self.i2c
             .write_read(self.address, &[GYRO_INT_STAT_1], &mut data)
             .map(|_| data[0] & 0x80 != 0)
     }
 
-    pub fn set_addressrange(&mut self, range: GyroRange) -> Result<(), I2C::Error> {
-        self.i2c.write(self.address, &[GYRO_RANGE, range as u8])
+    pub fn set_range(&mut self, range: GyroRange) -> Result<(), I2C::Error> {
+        self.i2c
+            .write(self.address, &[GYRO_RANGE, range as u8])
     }
 
-    pub fn get_addressrange(&mut self) -> Result<GyroRange, I2C::Error> {
+    pub fn get_range(&mut self) -> Result<GyroRange, I2C::Error> {
         let mut data = [0u8; 1];
         self.i2c
             .write_read(self.address, &[GYRO_RANGE], &mut data)
@@ -58,12 +59,12 @@ impl<I2C: I2c> Bmi088Gyroscope<I2C> {
             })
     }
 
-    pub fn set_addressbandwidth(&mut self, bandwidth: GyroBandwidth) -> Result<(), I2C::Error> {
+    pub fn set_bandwidth(&mut self, bandwidth: GyroBandwidth) -> Result<(), I2C::Error> {
         self.i2c
             .write(self.address, &[GYRO_BANDWIDTH, bandwidth as u8])
     }
 
-    pub fn get_addressbandwidth(&mut self) -> Result<GyroBandwidth, I2C::Error> {
+    pub fn get_bandwidth(&mut self) -> Result<GyroBandwidth, I2C::Error> {
         let mut data = [0u8; 1];
         self.i2c
             .write_read(self.address, &[GYRO_BANDWIDTH], &mut data)
@@ -81,7 +82,7 @@ impl<I2C: I2c> Bmi088Gyroscope<I2C> {
             })
     }
 
-    pub fn set_addresson(&mut self, on: bool) -> Result<(), I2C::Error> {
+    pub fn set_on(&mut self, on: bool) -> Result<(), I2C::Error> {
         let data = if on { 0x00 } else { 0x80 };
         self.i2c.write(self.address, &[GYRO_LPM1, data])
     }
@@ -90,7 +91,7 @@ impl<I2C: I2c> Bmi088Gyroscope<I2C> {
         self.i2c.write(self.address, &[GYRO_SOFTRESET, 0xB6])
     }
 
-    pub fn configure_addressint3_pin(
+    pub fn configure_int3_pin(
         &mut self,
         behavior: Bmi088PinBehavior,
         active_high: bool,
@@ -136,7 +137,7 @@ impl<I2C: I2c> Bmi088Gyroscope<I2C> {
             .write(self.address, &[GYRO_INT3_INT4_IO_MAP, data[0]])
     }
 
-    pub fn configure_addressint4_pin(
+    pub fn configure_int4_pin(
         &mut self,
         behavior: Bmi088PinBehavior,
         active_high: bool,
